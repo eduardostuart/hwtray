@@ -1,0 +1,27 @@
+[workspace]
+resolver = "2"
+members = [
+  "crates/homewizard-api",
+  "crates/homewizard-core",
+  "crates/homewizard-desktop",
+  "crates/tray-title",
+]
+
+[workspace.package]
+version = "0.1.0"
+authors = ["Eduardo Stuart"]
+edition = "2021"
+
+[workspace.dependencies]
+anyhow = "1"
+mdns-sd = "0.12"
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "2.0"
+tokio = { version = "1", features = ["full"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+homewizard-api = { version = "0.1.0", path = "crates/homewizard-api" }
+dirs = "6.0"
+homewizard-core = { version = "0.1.0", path = "crates/homewizard-core" }
