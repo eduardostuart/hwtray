@@ -57,18 +57,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Verify versions match across files
-        run: |
-          CARGO_V=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
-          PKG_V=$(node -e "console.log(require('./package.json').version)")
-          TAURI_V=$(node -e "console.log(require('./crates/homewizard-desktop/tauri.conf.json').version)")
-          echo "Cargo.toml:      $CARGO_V"
-          echo "package.json:    $PKG_V"
-          echo "tauri.conf.json: $TAURI_V"
-          if [ -z "$CARGO_V" ] || [ "$CARGO_V" != "$PKG_V" ] || [ "$CARGO_V" != "$TAURI_V" ]; then
-            echo "::error::Version mismatch across Cargo.toml, package.json, and tauri.conf.json"
-            exit 1
-          fi
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node scripts/bump-version.js check
 
   tag-on-bump:
     needs: [check, version-consistency]
@@ -80,30 +72,28 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
       - name: Detect version bump
         id: v
         run: |
-          NEW=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
-          OLD=$(git show HEAD~1:Cargo.toml 2>/dev/null | sed -n 's/^version = "\(.*\)"/\1/p' | head -1 || echo "")
+          NEW=$(node scripts/bump-version.js current)
+          OLD=$(git show HEAD~1:Cargo.toml 2>/dev/null | sed -n 's/^version = "\(.*\)"/\1/p' | head -1)
           echo "new=$NEW" >> "$GITHUB_OUTPUT"
-          echo "old=$OLD" >> "$GITHUB_OUTPUT"
           if [ -n "$NEW" ] && [ "$NEW" != "$OLD" ]; then
             echo "bumped=true" >> "$GITHUB_OUTPUT"
           else
             echo "bumped=false" >> "$GITHUB_OUTPUT"
           fi
-      - name: Check if tag already exists
-        id: tag
+      - name: Create and push tag
         if: steps.v.outputs.bumped == 'true'
         run: |
-          if git rev-parse --verify "refs/tags/v${{ steps.v.outputs.new }}" >/dev/null 2>&1; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
+          TAG="v${{ steps.v.outputs.new }}"
+          if git rev-parse --verify "refs/tags/$TAG" >/dev/null 2>&1; then
+            echo "$TAG already exists — skipping."
+            exit 0
           fi
-      - name: Create and push tag
-        if: steps.v.outputs.bumped == 'true' && steps.tag.outputs.exists == 'false'
-        run: |
-          git tag "v${{ steps.v.outputs.new }}"
-          git push origin "v${{ steps.v.outputs.new }}"
-          echo "Tagged v${{ steps.v.outputs.new }} — release.yml will build the binaries."
+          git tag "$TAG"
+          git push origin "$TAG"
+          echo "Tagged $TAG — release.yml will build the binaries."
