@@ -2,76 +2,26 @@
   <WindowLayout>
     <template #title>Menu Bar</template>
 
-    <div class="space-y-4">
-      <InfoBox>
-        Show live device readings in the macOS menu bar. Each metric appears as an independent item
-        next to the tray icon.
-      </InfoBox>
+    <InfoBox>
+      Show live device readings in the macOS menu bar. Each metric appears as an independent item
+      next to the tray icon.
+    </InfoBox>
 
-      <div
-        v-for="(metric, idx) in metrics"
-        :key="idx"
-        class="rounded-xl px-4 py-3 space-y-3 bg-[linear-gradient(135deg,rgba(255,255,255,0.03),rgba(255,255,255,0.01))] border border-[rgba(255,255,255,0.06)]"
-      >
-        <div class="flex items-center justify-between">
-          <div class="text-[10px] text-neutral-500 uppercase tracking-wider">
-            Metric {{ idx + 1 }}
-          </div>
-          <button
-            class="text-[10px] text-neutral-600 hover:text-hw-red cursor-pointer transition-colors"
-            @click="remove(idx)"
-          >
-            Remove
-          </button>
-        </div>
+    <TrayMetricEditor
+      v-for="(metric, idx) in metrics"
+      :key="idx"
+      :index="idx"
+      :metric="metric"
+      :devices="devices"
+      :field-options="fieldsForDevice(metric.device_id)"
+      :placeholder="deviceName(metric.device_id)"
+      @change-device="onDeviceChange(idx, $event)"
+      @change-field="updateField(idx, $event)"
+      @change-label="updateLabel(idx, $event)"
+      @remove="remove(idx)"
+    />
 
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <div class="text-[9px] text-neutral-600 mb-1">Device</div>
-            <BaseSelect
-              :model-value="metric.device_id"
-              @update:model-value="onDeviceChange(idx, String($event))"
-            >
-              <option v-for="d in devices" :key="d.id" :value="d.id">{{ d.name }}</option>
-            </BaseSelect>
-          </div>
-          <div>
-            <div class="text-[9px] text-neutral-600 mb-1">Field</div>
-            <BaseSelect
-              :model-value="metric.field"
-              @update:model-value="updateField(idx, String($event))"
-            >
-              <option
-                v-for="f in fieldsForDevice(metric.device_id)"
-                :key="f.value"
-                :value="f.value"
-              >
-                {{ f.label }}
-              </option>
-            </BaseSelect>
-          </div>
-        </div>
-
-        <div>
-          <div class="text-[9px] text-neutral-600 mb-1">Label</div>
-          <input
-            :value="metric.label"
-            :placeholder="deviceName(metric.device_id)"
-            maxlength="12"
-            class="w-full rounded-lg bg-neutral-800/50 px-3 py-2 text-[12px] text-neutral-300 outline-none placeholder-neutral-600 border border-[rgba(255,255,255,0.05)]"
-            @input="updateLabel(idx, ($event.target as HTMLInputElement).value)"
-          />
-        </div>
-      </div>
-
-      <button
-        v-if="devices.length > 0"
-        class="w-full rounded-lg py-3 text-[13px] font-medium text-neutral-500 hover:text-neutral-300 cursor-pointer transition-colors border border-dashed border-[rgba(255,255,255,0.08)]"
-        @click="add"
-      >
-        + Add metric
-      </button>
-    </div>
+    <AddRowButton v-if="devices.length > 0" @click="add">+ Add metric</AddRowButton>
   </WindowLayout>
 </template>
 
@@ -80,7 +30,8 @@ import { computed, onMounted, ref } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import WindowLayout from '@/components/WindowLayout.vue'
 import InfoBox from '@/components/InfoBox.vue'
-import BaseSelect from '@/components/BaseSelect.vue'
+import TrayMetricEditor from '@/components/TrayMetricEditor.vue'
+import AddRowButton from '@/components/AddRowButton.vue'
 import { useSettingsStore } from '@/stores/settings'
 import { ProductType } from '@/types/products'
 import type { SavedDevice, TrayMetricField, AppSettings } from '@/types/device'
