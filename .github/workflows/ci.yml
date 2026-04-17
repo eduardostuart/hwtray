@@ -52,3 +52,48 @@ jobs:
         run: bunx vitest run
       - name: Build frontend
         run: bunx vite build
+
+  version-consistency:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node scripts/bump-version.js check
+
+  tag-on-bump:
+    needs: [check, version-consistency]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Detect version bump
+        id: v
+        run: |
+          NEW=$(node scripts/bump-version.js current)
+          OLD=$(git show HEAD~1:Cargo.toml 2>/dev/null | sed -n 's/^version = "\(.*\)"/\1/p' | head -1)
+          echo "new=$NEW" >> "$GITHUB_OUTPUT"
+          if [ -n "$NEW" ] && [ "$NEW" != "$OLD" ]; then
+            echo "bumped=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "bumped=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Create and push tag
+        if: steps.v.outputs.bumped == 'true'
+        run: |
+          TAG="v${{ steps.v.outputs.new }}"
+          if git rev-parse --verify "refs/tags/$TAG" >/dev/null 2>&1; then
+            echo "$TAG already exists — skipping."
+            exit 0
+          fi
+          git tag "$TAG"
+          git push origin "$TAG"
+          echo "Tagged $TAG — release.yml will build the binaries."

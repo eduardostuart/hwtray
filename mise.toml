@@ -108,12 +108,8 @@ run = "bun install"
 # ------------------------------------------------------------------------------
 
 [tasks.bump]
-description = "Bump version (e.g. mise run bump 0.2.0)"
-run = "bash scripts/bump-version.sh {{arg(i=0)}}"
-
-[tasks.release]
-description = "Bump, commit, tag, push (e.g. mise run release 0.2.0)"
-run = "bash scripts/release.sh {{arg(i=0)}}"
+description = "Bump version across Cargo.toml, package.json, tauri.conf.json (e.g. mise run bump 0.2.0)"
+run = "node scripts/bump-version.js set {{arg(i=0)}}"
 
 [tasks.clean]
 description = "Remove build artifacts"
