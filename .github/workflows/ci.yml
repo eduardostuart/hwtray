@@ -79,7 +79,7 @@ jobs:
         id: v
         run: |
           NEW=$(node scripts/bump-version.js current)
-          OLD=$(git show HEAD~1:Cargo.toml 2>/dev/null | sed -n 's/^version = "\(.*\)"/\1/p' | head -1)
+          OLD=$(git show HEAD~1:crates/homewizard-desktop/Cargo.toml 2>/dev/null | sed -n 's/^version = "\(.*\)"/\1/p' | head -1)
           echo "new=$NEW" >> "$GITHUB_OUTPUT"
           if [ -n "$NEW" ] && [ "$NEW" != "$OLD" ]; then
             echo "bumped=true" >> "$GITHUB_OUTPUT"

@@ -35,9 +35,11 @@ const jsonCodec = () => {
   }
 }
 
-// Cargo.toml is the source of truth for the workspace version.
+// The desktop crate's Cargo.toml is the source of truth for the app version.
+// The workspace root Cargo.toml has its own version used only by the internal
+// api/core crates, which never publish and move on their own cadence.
 const FILES = [
-  { path: resolve(root, 'Cargo.toml'), codec: tomlCodec('version') },
+  { path: resolve(root, 'crates/homewizard-desktop/Cargo.toml'), codec: tomlCodec('version') },
   { path: resolve(root, 'package.json'), codec: jsonCodec() },
   { path: resolve(root, 'crates/homewizard-desktop/tauri.conf.json'), codec: jsonCodec() },
 ]
