@@ -52,3 +52,58 @@ jobs:
         run: bunx vitest run
       - name: Build frontend
         run: bunx vite build
+
+  version-consistency:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify versions match across files
+        run: |
+          CARGO_V=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
+          PKG_V=$(node -e "console.log(require('./package.json').version)")
+          TAURI_V=$(node -e "console.log(require('./crates/homewizard-desktop/tauri.conf.json').version)")
+          echo "Cargo.toml:      $CARGO_V"
+          echo "package.json:    $PKG_V"
+          echo "tauri.conf.json: $TAURI_V"
+          if [ -z "$CARGO_V" ] || [ "$CARGO_V" != "$PKG_V" ] || [ "$CARGO_V" != "$TAURI_V" ]; then
+            echo "::error::Version mismatch across Cargo.toml, package.json, and tauri.conf.json"
+            exit 1
+          fi
+
+  tag-on-bump:
+    needs: [check, version-consistency]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Detect version bump
+        id: v
+        run: |
+          NEW=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
+          OLD=$(git show HEAD~1:Cargo.toml 2>/dev/null | sed -n 's/^version = "\(.*\)"/\1/p' | head -1 || echo "")
+          echo "new=$NEW" >> "$GITHUB_OUTPUT"
+          echo "old=$OLD" >> "$GITHUB_OUTPUT"
+          if [ -n "$NEW" ] && [ "$NEW" != "$OLD" ]; then
+            echo "bumped=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "bumped=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Check if tag already exists
+        id: tag
+        if: steps.v.outputs.bumped == 'true'
+        run: |
+          if git rev-parse --verify "refs/tags/v${{ steps.v.outputs.new }}" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Create and push tag
+        if: steps.v.outputs.bumped == 'true' && steps.tag.outputs.exists == 'false'
+        run: |
+          git tag "v${{ steps.v.outputs.new }}"
+          git push origin "v${{ steps.v.outputs.new }}"
+          echo "Tagged v${{ steps.v.outputs.new }} — release.yml will build the binaries."
