@@ -2,7 +2,7 @@
 name = "homewizard-desktop"
 # Desktop app has its own release cadence; the workspace version is a
 # background value for the internal api/core crates (which never publish).
-version = "0.1.1"
+version = "0.1.2"
 authors.workspace = true
 edition.workspace = true
 description = "Tauri desktop app for HomeWizard Energy monitoring"
