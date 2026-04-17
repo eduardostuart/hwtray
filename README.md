@@ -15,7 +15,7 @@ A lightweight macOS tray app for monitoring HomeWizard Energy devices on your lo
 <br clear="both" />
 
 <div align="center">
-<img src="docs/screenshot.png"  />
+<img src="docs/screenshot.jpg"  />
 </div>
 
 ## Author
