@@ -162,6 +162,23 @@ impl AppConfig {
         Ok(())
     }
 
+    /// Rename a saved device by id. Returns a reference to the updated device.
+    ///
+    /// Validates that `new_name` is non-empty after trimming. Does not persist —
+    /// caller is responsible for calling `save_to` afterwards.
+    pub fn rename_device(&mut self, id: &str, new_name: &str) -> Result<&SavedDevice, String> {
+        if new_name.trim().is_empty() {
+            return Err(format!("device {id} cannot be renamed to empty name"));
+        }
+        let device = self
+            .devices
+            .iter_mut()
+            .find(|d| d.id == id)
+            .ok_or_else(|| format!("device {id} not found"))?;
+        device.name = new_name.to_string();
+        Ok(device)
+    }
+
     /// Default config file path on macOS.
     pub fn default_path() -> std::path::PathBuf {
         let mut path = dirs::config_dir().unwrap_or_else(|| std::path::PathBuf::from("."));
@@ -414,5 +431,50 @@ mod tests {
     fn invalid_metric_field_rejected() {
         let json = r#"{"device_id":"x","field":"invalid_field","label":""}"#;
         assert!(serde_json::from_str::<TrayMetricConfig>(json).is_err());
+    }
+
+    #[test]
+    fn rename_device_updates_name() {
+        let mut config = AppConfig::default();
+        config.devices.push(valid_device());
+        let updated = config
+            .rename_device("aabbccddeeff", "Sala")
+            .unwrap()
+            .clone();
+        assert_eq!(updated.name, "Sala");
+        assert_eq!(config.devices[0].name, "Sala");
+    }
+
+    #[test]
+    fn rename_device_rejects_empty_name() {
+        let mut config = AppConfig::default();
+        config.devices.push(valid_device());
+        assert!(config.rename_device("aabbccddeeff", "   ").is_err());
+        assert_eq!(config.devices[0].name, "P1 Meter");
+    }
+
+    #[test]
+    fn rename_device_rejects_unknown_id() {
+        let mut config = AppConfig::default();
+        config.devices.push(valid_device());
+        assert!(config.rename_device("missing", "X").is_err());
+    }
+
+    #[test]
+    fn rename_device_preserves_other_devices_and_order() {
+        let mut config = AppConfig::default();
+        config.devices.push(valid_device());
+        config.devices.push(SavedDevice {
+            id: "ffeeddccbbaa".to_string(),
+            name: "Socket".to_string(),
+            product_type: "HWE-SKT".to_string(),
+            ip: "192.168.1.51".to_string(),
+            port: 80,
+        });
+        config.rename_device("aabbccddeeff", "Novo").unwrap();
+        assert_eq!(config.devices.len(), 2);
+        assert_eq!(config.devices[0].id, "aabbccddeeff");
+        assert_eq!(config.devices[0].name, "Novo");
+        assert_eq!(config.devices[1].name, "Socket");
     }
 }

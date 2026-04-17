@@ -38,6 +38,8 @@ pub fn run() {
             commands::get_settings,
             commands::update_settings,
             commands::get_arrow_offset,
+            commands::rename_device,
+            commands::identify_device,
         ])
         .setup(on_setup)
         .run(tauri::generate_context!())

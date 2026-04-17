@@ -12,7 +12,7 @@
       </div>
     </div>
     <div class="border-t border-[rgba(255,255,255,0.06)]" />
-    <div class="flex-1 overflow-y-auto px-5 py-5">
+    <div class="flex-1 overflow-y-auto px-5 py-5 space-y-4">
       <slot />
     </div>
   </div>
