@@ -69,6 +69,23 @@ impl HwClient {
         })?;
         Ok(resp.json().await?)
     }
+
+    /// Ask the device to physically identify itself (LED blink, ~3s on sockets).
+    ///
+    /// Maps to `PUT /api/v1/identify`. Only supported by Energy Socket (HWE-SKT);
+    /// other product types may return 404.
+    pub async fn identify(&self) -> Result<(), ApiError> {
+        let url = format!("{}/api/v1/identify", self.base_url());
+        let resp = self.http.put(&url).send().await.map_err(|e| {
+            if e.is_connect() || e.is_timeout() {
+                ApiError::Unreachable(self.ip.clone())
+            } else {
+                ApiError::Http(e)
+            }
+        })?;
+        resp.error_for_status()?;
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -94,5 +111,35 @@ mod tests {
         let first = shared_http() as *const reqwest::Client;
         let second = shared_http() as *const reqwest::Client;
         assert_eq!(first, second);
+    }
+
+    #[tokio::test]
+    async fn identify_sends_put_to_correct_path() {
+        use wiremock::matchers::{method, path};
+        use wiremock::{Mock, MockServer, ResponseTemplate};
+
+        let server = MockServer::start().await;
+        Mock::given(method("PUT"))
+            .and(path("/api/v1/identify"))
+            .respond_with(ResponseTemplate::new(200))
+            .expect(1)
+            .mount(&server)
+            .await;
+
+        let uri = server.uri();
+        let without_scheme = uri.trim_start_matches("http://");
+        let (host, port_str) = without_scheme.split_once(':').unwrap();
+        let port: u16 = port_str.parse().unwrap();
+
+        let client = HwClient::new(host, port);
+        client.identify().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn identify_returns_unreachable_when_port_closed() {
+        // Port 1 is virtually always closed.
+        let client = HwClient::new("127.0.0.1", 1);
+        let err = client.identify().await.unwrap_err();
+        assert!(matches!(err, ApiError::Unreachable(_)));
     }
 }

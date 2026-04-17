@@ -1,10 +1,14 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
+import { invoke } from '@tauri-apps/api/core'
 import { useDevicesStore } from './devices'
+
+vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn() }))
 
 describe('useDevicesStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    vi.mocked(invoke).mockReset()
   })
 
   it('starts with empty devices', () => {
@@ -46,6 +50,52 @@ describe('useDevicesStore', () => {
     store.setOffline('1')
     store.setOnline('1')
     expect(store.deviceStates['1'].online).toBe(true)
+  })
+
+  it('renameDevice invokes IPC and merges updated device into state', async () => {
+    const store = useDevicesStore()
+    store.setDevices([
+      { id: 'abc', name: 'Old', product_type: 'HWE-P1', ip: '192.168.1.50', port: 80 },
+    ])
+    vi.mocked(invoke).mockResolvedValueOnce({
+      id: 'abc',
+      name: 'New',
+      product_type: 'HWE-P1',
+      ip: '192.168.1.50',
+      port: 80,
+    })
+
+    await store.renameDevice('abc', 'New')
+
+    expect(invoke).toHaveBeenCalledWith('rename_device', { id: 'abc', name: 'New' })
+    expect(store.deviceStates['abc'].device.name).toBe('New')
+  })
+
+  it('startIdentifying adds id and stopIdentifying removes', () => {
+    const store = useDevicesStore()
+    store.startIdentifying('abc')
+    expect(store.identifyingIds.has('abc')).toBe(true)
+    store.stopIdentifying('abc')
+    expect(store.identifyingIds.has('abc')).toBe(false)
+  })
+
+  it('renameDevice preserves telemetry/sparkline state', async () => {
+    const store = useDevicesStore()
+    store.setDevices([
+      { id: 'abc', name: 'Old', product_type: 'HWE-P1', ip: '192.168.1.50', port: 80 },
+    ])
+    store.deviceStates['abc'].sparkline = [1, 2, 3]
+    vi.mocked(invoke).mockResolvedValueOnce({
+      id: 'abc',
+      name: 'New',
+      product_type: 'HWE-P1',
+      ip: '192.168.1.50',
+      port: 80,
+    })
+
+    await store.renameDevice('abc', 'New')
+
+    expect(store.deviceStates['abc'].sparkline).toEqual([1, 2, 3])
   })
 })
 

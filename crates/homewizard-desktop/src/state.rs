@@ -90,6 +90,29 @@ impl AppState {
         self.save_config().await
     }
 
+    pub async fn rename_device(&self, id: String, name: String) -> Result<SavedDevice, String> {
+        let updated = {
+            let mut config = self.config.lock().await;
+            config.rename_device(&id, &name)?.clone()
+        };
+        self.save_config().await?;
+        Ok(updated)
+    }
+
+    pub async fn identify_device(&self, id: String) -> Result<(), String> {
+        let (ip, port) = {
+            let config = self.config.lock().await;
+            let device = config
+                .devices
+                .iter()
+                .find(|d| d.id == id)
+                .ok_or_else(|| format!("device {id} not found"))?;
+            (device.ip.clone(), device.port)
+        };
+        let client = homewizard_api::client::HwClient::new(&ip, port);
+        client.identify().await.map_err(|e| e.to_string())
+    }
+
     pub async fn get_settings(&self) -> AppSettings {
         self.config.lock().await.settings.clone()
     }
@@ -197,5 +220,52 @@ mod tests {
             after.len(),
             "config must not change on rejected input"
         );
+    }
+
+    #[tokio::test]
+    async fn rename_device_persists_new_name() {
+        let mut config = AppConfig::default();
+        config.devices.push(SavedDevice {
+            id: "abc".into(),
+            name: "Old".into(),
+            product_type: "HWE-P1".into(),
+            ip: "192.168.1.50".into(),
+            port: 80,
+        });
+        let (state, _dir) = test_state(config);
+
+        let updated = state
+            .rename_device("abc".into(), "New".into())
+            .await
+            .unwrap();
+        assert_eq!(updated.name, "New");
+
+        let reloaded = AppConfig::load_from(&state.config_path).unwrap();
+        assert_eq!(reloaded.devices[0].name, "New");
+    }
+
+    #[tokio::test]
+    async fn rename_device_returns_error_on_empty_name() {
+        let mut config = AppConfig::default();
+        config.devices.push(SavedDevice {
+            id: "abc".into(),
+            name: "Old".into(),
+            product_type: "HWE-P1".into(),
+            ip: "192.168.1.50".into(),
+            port: 80,
+        });
+        let (state, _dir) = test_state(config);
+
+        assert!(state
+            .rename_device("abc".into(), "  ".into())
+            .await
+            .is_err());
+    }
+
+    #[tokio::test]
+    async fn identify_device_fails_for_unknown_id() {
+        let (state, _dir) = test_state(AppConfig::default());
+        let err = state.identify_device("missing".into()).await.unwrap_err();
+        assert!(err.contains("not found") || err.contains("missing"));
     }
 }

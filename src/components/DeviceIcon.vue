@@ -1,6 +1,7 @@
 <template>
   <div
     class="device-icon flex h-10 w-10 items-center justify-center rounded-xl"
+    :class="{ pulsing }"
     :style="{ '--icon-color': productColor(productType) }"
   >
     <Droplets v-if="productType === P.WATERMETER" :size="20" class="icon-stroke" />
@@ -18,7 +19,7 @@
 import { Droplets, Zap, Flame } from 'lucide-vue-next'
 import { ProductType as P, productIconLabel, productColor } from '@/types/products'
 
-defineProps<{ productType: string }>()
+defineProps<{ productType: string; pulsing?: boolean }>()
 </script>
 
 <style scoped>
@@ -37,5 +38,19 @@ defineProps<{ productType: string }>()
 }
 .icon-text {
   color: var(--icon-color);
+}
+.pulsing {
+  animation: device-pulse 1s ease-in-out 3;
+}
+@keyframes device-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--icon-color) 6%, transparent);
+  }
+  50% {
+    transform: scale(1.08);
+    box-shadow: 0 0 24px color-mix(in srgb, var(--icon-color) 40%, transparent);
+  }
 }
 </style>

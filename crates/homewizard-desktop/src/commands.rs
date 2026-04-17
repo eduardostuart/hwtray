@@ -33,6 +33,22 @@ pub async fn save_devices(
     state.save_devices(devices).await
 }
 
+/// Rename a saved device. Returns the updated SavedDevice on success.
+#[tauri::command]
+pub async fn rename_device(
+    state: State<'_, Arc<AppState>>,
+    id: String,
+    name: String,
+) -> Result<SavedDevice, String> {
+    state.rename_device(id, name).await
+}
+
+/// Tell a device to physically identify itself (LED blink for sockets).
+#[tauri::command]
+pub async fn identify_device(state: State<'_, Arc<AppState>>, id: String) -> Result<(), String> {
+    state.identify_device(id).await
+}
+
 /// Return the saved device list from config.
 #[tauri::command]
 pub async fn get_saved_devices(

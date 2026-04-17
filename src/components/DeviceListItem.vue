@@ -10,9 +10,20 @@
       />
     </div>
     <div v-else class="w-4 flex-shrink-0" />
-    <DeviceIcon :product-type="productType" class="mr-3" />
+    <DeviceIcon :product-type="productType" :pulsing="pulsing" class="mr-3" />
     <div class="flex-1 min-w-0">
-      <div class="truncate text-[13px] font-medium text-neutral-200">
+      <input
+        v-if="editing"
+        ref="nameInput"
+        v-model="localName"
+        type="text"
+        class="w-full bg-transparent border-b border-neutral-500 text-[13px] font-medium text-neutral-200 focus:outline-none focus:border-neutral-300"
+        @keydown.enter.stop.prevent="commit"
+        @keydown.escape.stop.prevent="cancel"
+        @blur="commit"
+        @click.stop
+      />
+      <div v-else class="truncate text-[13px] font-medium text-neutral-200">
         {{ name }}
       </div>
       <div class="flex items-center gap-2 mt-0.5">
@@ -28,23 +39,28 @@
         {{ metricUnit }}
       </div>
     </div>
-    <button
+    <DeviceActionsMenu
       v-if="hideable"
-      class="ml-2 opacity-0 group-hover:opacity-100 transition-opacity text-neutral-700 hover:text-neutral-400 cursor-pointer"
-      @click.stop="$emit('hide')"
-    >
-      <EyeOff :size="12" />
-    </button>
+      :device-id="id"
+      :product-type="productType"
+      :online="online"
+      @identify="$emit('identify')"
+      @rename="$emit('rename-start')"
+      @hide="$emit('hide')"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { GripVertical, EyeOff } from 'lucide-vue-next'
+import { ref, watch, nextTick } from 'vue'
+import { GripVertical } from 'lucide-vue-next'
 import DeviceIcon from './DeviceIcon.vue'
 import StatusBadge from './StatusBadge.vue'
+import DeviceActionsMenu from './DeviceActionsMenu.vue'
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
+    id: string
     name: string
     productType: string
     online: boolean
@@ -53,15 +69,53 @@ withDefaults(
     secondary?: string | null
     draggable?: boolean
     hideable?: boolean
+    editing?: boolean
+    pulsing?: boolean
   }>(),
   {
     secondary: undefined,
     draggable: false,
     hideable: false,
+    editing: false,
+    pulsing: false,
   },
 )
 
-defineEmits<{ hide: [] }>()
+const emit = defineEmits<{
+  hide: []
+  identify: []
+  'rename-start': []
+  rename: [name: string]
+  'rename-cancel': []
+}>()
+
+const localName = ref(props.name)
+const nameInput = ref<HTMLInputElement | null>(null)
+
+watch(
+  () => props.editing,
+  async (editing) => {
+    if (editing) {
+      localName.value = props.name
+      await nextTick()
+      nameInput.value?.focus()
+      nameInput.value?.select()
+    }
+  },
+)
+
+function commit() {
+  const trimmed = localName.value.trim()
+  if (trimmed === '') {
+    emit('rename-cancel')
+    return
+  }
+  emit('rename', trimmed)
+}
+
+function cancel() {
+  emit('rename-cancel')
+}
 </script>
 
 <style scoped>

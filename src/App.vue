@@ -3,13 +3,14 @@
     <div class="relative h-[10px] flex-shrink-0">
       <div class="arrow" :style="{ left: arrowLeft + 'px' }" />
     </div>
-    <div ref="contentRef" class="w-full overflow-clip rounded-xl bg-[#0d1117]">
+    <div ref="contentRef" data-content-root class="w-full overflow-clip rounded-xl bg-[#0d1117]">
       <RouterView />
     </div>
   </div>
   <div v-else class="h-full">
     <RouterView />
   </div>
+  <ToastHost />
 </template>
 
 <script setup lang="ts">
@@ -19,6 +20,7 @@ import { invoke } from '@tauri-apps/api/core'
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { useAutoResize } from '@/composables/useAutoResize'
 import { useTauriEvents } from '@/composables/useTauriEvents'
+import ToastHost from '@/components/ToastHost.vue'
 
 const route = useRoute()
 const router = useRouter()

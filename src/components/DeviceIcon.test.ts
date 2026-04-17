@@ -40,4 +40,14 @@ describe('DeviceIcon', () => {
     expect(wrapper.text()).toBe('?')
     expect(wrapper.find('.device-icon').attributes('style')).toContain('#10B981')
   })
+
+  it('applies pulsing class when pulsing prop is true', () => {
+    const wrapper = mount(DeviceIcon, { props: { productType: 'HWE-SKT', pulsing: true } })
+    expect(wrapper.classes()).toContain('pulsing')
+  })
+
+  it('does not apply pulsing class by default', () => {
+    const wrapper = mount(DeviceIcon, { props: { productType: 'HWE-SKT' } })
+    expect(wrapper.classes()).not.toContain('pulsing')
+  })
 })
