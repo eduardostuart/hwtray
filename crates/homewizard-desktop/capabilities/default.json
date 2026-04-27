@@ -20,6 +20,8 @@
     "autostart:allow-is-enabled",
     "positioner:default",
     "positioner:allow-set-tray-icon-state",
-    "opener:default"
+    "opener:default",
+    "updater:default",
+    "process:allow-restart"
   ]
 }

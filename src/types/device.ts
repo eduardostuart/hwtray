@@ -67,6 +67,7 @@ export interface AppSettings {
   dashboard_order?: string[]
   hidden_devices?: string[]
   tray_metrics?: TrayMetricConfig[]
+  auto_update?: boolean
 }
 
 export type TrayMetricField = 'active_power' | 'total_gas' | 'water_flow'

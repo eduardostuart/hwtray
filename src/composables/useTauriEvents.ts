@@ -3,6 +3,7 @@ import { emit, listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { invoke } from '@tauri-apps/api/core'
 import { useDevicesStore } from '@/stores/devices'
 import { useSettingsStore } from '@/stores/settings'
+import { useUpdater } from '@/composables/useUpdater'
 import type { TelemetryUpdate, AppSettings, SavedDevice, MeasurementData } from '@/types/device'
 
 interface InitialState {
@@ -16,6 +17,7 @@ interface InitialState {
 export function useTauriEvents() {
   const devicesStore = useDevicesStore()
   const settingsStore = useSettingsStore()
+  const updater = useUpdater()
   const unlisteners: UnlistenFn[] = []
   let cleanupNetworkListeners: (() => void) | null = null
 
@@ -35,6 +37,14 @@ export function useTauriEvents() {
       }
       for (const [id, data] of Object.entries(state.cached_data ?? {})) {
         devicesStore.setCachedData(id, data)
+      }
+
+      // Check for updates if enabled
+      if (settingsStore.autoUpdate) {
+        const hasUpdate = await updater.checkForUpdates()
+        if (hasUpdate) {
+          console.log(`[hw] Update ${updater.version()} available`)
+        }
       }
     } catch (e) {
       console.warn('[hw] Failed to load initial state:', e)

@@ -34,6 +34,13 @@
       @update:model-value="updateShowPollIndicator"
     />
 
+    <SettingsToggle
+      label="Auto-update"
+      description="Automatically check for updates when the app starts."
+      :model-value="settingsStore.autoUpdate"
+      @update:model-value="updateAutoUpdate"
+    />
+
     <SearchButton variant="ghost" small @click="router.push({ name: 'discovery' })">
       Re-discover devices
     </SearchButton>
@@ -92,6 +99,10 @@ async function updateAlwaysOnTop(v: boolean) {
 }
 async function updateShowPollIndicator(v: boolean) {
   settingsStore.showPollIndicator = v
+  await saveSettings()
+}
+async function updateAutoUpdate(v: boolean) {
+  settingsStore.autoUpdate = v
   await saveSettings()
 }
 </script>

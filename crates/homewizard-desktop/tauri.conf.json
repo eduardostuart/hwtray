@@ -18,6 +18,7 @@
   },
   "bundle": {
     "active": true,
+    "createUpdaterArtifacts": true,
     "icon": [
       "icons/icon.icns",
       "icons/32x32.png",
@@ -27,9 +28,17 @@
       "icons/1024x1024.png",
       "icons/icon.png"
     ],
-    "targets": ["dmg"],
+    "targets": ["app", "dmg"],
     "macOS": {
       "minimumSystemVersion": "13.0"
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDIyODQ2QjYyQTJFRENDMDQKUldRRXpPMmlZbXVFSWtHK3pGc0lNbysxSVZSd3lvVTE5Nnk1dVk2MjZtMEdVY3VQak9lcVRxMWUK",
+      "endpoints": [
+        "https://github.com/eduardostuart/hwtray/releases/latest/download/latest.json"
+      ]
     }
   }
 }

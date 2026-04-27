@@ -12,6 +12,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const dashboardOrder = ref<string[]>([])
   const hiddenDevices = ref<string[]>([])
   const trayMetrics = ref<TrayMetricConfig[]>([])
+  const autoUpdate = ref(true)
 
   function loadFromSettings(settings: AppSettings) {
     pollIntervalMs.value = settings.poll_interval_ms
@@ -23,6 +24,7 @@ export const useSettingsStore = defineStore('settings', () => {
     dashboardOrder.value = settings.dashboard_order ?? []
     hiddenDevices.value = settings.hidden_devices ?? []
     trayMetrics.value = settings.tray_metrics ?? []
+    autoUpdate.value = settings.auto_update ?? true
   }
 
   function toSettings(): AppSettings {
@@ -36,6 +38,7 @@ export const useSettingsStore = defineStore('settings', () => {
       dashboard_order: dashboardOrder.value,
       hidden_devices: hiddenDevices.value,
       tray_metrics: trayMetrics.value,
+      auto_update: autoUpdate.value,
     }
   }
 
@@ -61,6 +64,7 @@ export const useSettingsStore = defineStore('settings', () => {
     dashboardOrder,
     hiddenDevices,
     trayMetrics,
+    autoUpdate,
     isHidden,
     toggleHidden,
     loadFromSettings,

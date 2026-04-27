@@ -66,6 +66,9 @@ pub struct AppSettings {
     /// Metrics to display in the macOS menu bar.
     #[serde(default)]
     pub tray_metrics: Vec<TrayMetricConfig>,
+    /// Automatically check for updates on launch.
+    #[serde(default = "default_true")]
+    pub auto_update: bool,
 }
 
 /// A metric to display in the macOS menu bar tray.
@@ -116,6 +119,7 @@ impl Default for AppSettings {
             dashboard_order: Vec::new(),
             hidden_devices: Vec::new(),
             tray_metrics: Vec::new(),
+            auto_update: true,
         }
     }
 }
