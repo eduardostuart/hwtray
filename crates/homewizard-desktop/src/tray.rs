@@ -47,8 +47,17 @@ fn handle_tray_click(tray_icon: &tauri::tray::TrayIcon, event: TrayIconEvent) {
         ..
     } = event
     {
-        let pos = rect.position.to_logical::<f64>(1.0);
-        let size = rect.size.to_logical::<f64>(1.0);
+        // Get the scale factor from the primary monitor (Retina displays have scale 2.0)
+        let scale = tray_icon
+            .app_handle()
+            .primary_monitor()
+            .ok()
+            .flatten()
+            .map(|m| m.scale_factor())
+            .unwrap_or(1.0);
+
+        let pos = rect.position.to_logical::<f64>(scale);
+        let size = rect.size.to_logical::<f64>(scale);
         windows::toggle_main(tray_icon.app_handle(), pos.x + size.width / 2.0);
     }
 }
